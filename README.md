@@ -12,7 +12,7 @@ The tool was intended to be used to evaluate "vanilla" java projects built witho
 
 ## python
 
-version: python 3.10.6
+version: python 3.10.x
 
 ```shell
 cd path/tp/Juniter
@@ -28,9 +28,6 @@ version: openjdk 17.0.6 2023-01-17
 
 version: Apache Maven >=3.6.3
 
-## unrar
-
-version: UNRAR >=6.11 beta 1
 
 # Usage
 
@@ -77,3 +74,13 @@ The mapping file should be a CSV file with 2 columns, which can be optionally pr
 
 
 
+## Streamlit Interface
+
+Running through Streamlit locally:
+
+```shell
+cd path/to/Juniter
+streamlit run StreamLit/Home.py
+```
+
+or simply visit the [streamlit web interface](juniter.streamlit.app)
