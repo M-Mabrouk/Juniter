@@ -13,3 +13,5 @@ with st.columns([1, 7, 1])[1]:
 
     st.write("The tool was intended to be used to evaluate \"vanilla\" java projects built without the use of any package-manager, so it won't work with gradle nor ant,")
     st.write("but it can be repurposed to evaluate maven projects by changing the template project. ")
+
+    st.write("For more information, please refer to the [GitHub repository](https://github.com/M-Mabrouk/Juniter).")
