@@ -2,7 +2,7 @@ import asyncio
 import os
 import re
 import zipfile
-import rarfile
+from pyunpack import Archive
 import subprocess
 import pandas as pd
 from typing import Callable
@@ -58,8 +58,7 @@ def bootstrap(projects_file:str, tests_file:str):
             zip_ref.extractall(PROJECTS_DIR)
     elif projects_file.endswith('.rar'):
         # Extract the project
-        with rarfile.RarFile(projects_file, 'r') as rar_ref:
-            rar_ref.extractall(PROJECTS_DIR)
+        Archive(projects_file).extractall(PROJECTS_DIR)
     else:
         return False
     if tests_file.endswith('.zip'):
@@ -68,8 +67,7 @@ def bootstrap(projects_file:str, tests_file:str):
             zip_ref.extractall(TESTS_DIR)
     elif tests_file.endswith('.rar'):
         # Extract the tests
-        with rarfile.RarFile(tests_file, 'r') as rar_ref:
-            rar_ref.extractall(TESTS_DIR)
+        Archive(tests_file).extractall(TESTS_DIR)
     else:
         return False
 
@@ -88,10 +86,10 @@ def prepare_project(project_file:str):
     if project_file.endswith('.rar'):
         # Extract the project
         project_path = os.path.join(PROJECTS_DIR, project_file)
-        with rarfile.RarFile(project_path, 'r') as rar_ref:
-            # Get the name of the extracted project directory
-            project_dir = os.path.join(PROJECTS_DIR, project_file[:-4])
-            rar_ref.extractall(project_dir)
+        project_dir = os.path.join(PROJECTS_DIR, project_file[:-4])
+        if not os.path.exists(project_dir):
+            os.mkdir(project_dir)
+        Archive(project_path).extractall(project_dir)
         
     # If the project was't a zip or rar file, skip it
     if project_dir is None:
