@@ -110,7 +110,7 @@ else:
         with col2:
             st.subheader('Progress')
             if 'prg_bar' not in st.session_state:
-                st.session_state['prg_bar'] = st.empty()
+                st.session_state['prg_bar'] = st.progress(0)
             st.session_state['prg_bar'].progress(st.session_state['progress'])
         with col2.columns([4,1])[1]:
             if 'prg_info' not in st.session_state:
@@ -121,7 +121,6 @@ else:
         st.experimental_rerun()
     else:
         Juniter.clear_files()
-        pre.empty()
         with col2:
             st.success('Evaluation done')
             downloadable = convert_zip(st.session_state['results'])
