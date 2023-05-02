@@ -40,7 +40,7 @@ def clean():
 def update_progress(info):
     st.session_state['progress'] = info['current'] / info['total']
     st.session_state['prg_bar'].progress(st.session_state['progress'])
-    st.session_state['prg_info'].write(f'step {info["current"]} out of {info["total"]}')
+    st.session_state['prg_info'].text(f'step {info["current"]} out of {info["total"]}')
 
 
 def convert_zip(dfs:dict):
