@@ -119,23 +119,23 @@ def create_dataframes():
     eval_results['Total'] = pd.DataFrame(columns=labels)
     return eval_results
 
-async def run(mapping:dict = None , progress:Callable = None):
-    print('Running Juniter')
+def run(mapping:dict = None , progress:Callable = None):
     done = 0
     out_of = len(list(os.listdir(TESTS_DIR))) * len(list(os.listdir(PROJECTS_DIR)))
     if progress is not None:
                 progress({'current': done, 'total': out_of})
-    await asyncio.sleep(0.1)
     eval_results = create_dataframes()
     for project in os.listdir(PROJECTS_DIR):
         if not prepare_project(project):
             continue
         total_results = [0, 0, 0, 0]
+        filename = project[:-4]
+        if mapping is not None and project in mapping:
+                filename = mapping[project]
         for test in os.listdir(TESTS_DIR):
             prepare_test(test)
             comp = subprocess.run(["mvn", "compile"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, cwd=TEMPLATE_DIR)
             result = subprocess.run(["mvn", "test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, cwd=TEMPLATE_DIR)
-            await asyncio.sleep(0.1)
             test_name = test[:-5]
             output = result.stdout
             test_results = re.search(r'Tests run: (\d+), Failures: (\d+), Errors: (\d+), Skipped: (\d+)', output.decode('utf-8'))
@@ -145,14 +145,42 @@ async def run(mapping:dict = None , progress:Callable = None):
             if progress is not None:
                 progress({'current': done, 'total': out_of})
             test_results = test_results.groups()
-            filename = project[:-4]
-            if mapping is not None and project in mapping:
-                filename = mapping[project]
             test_results = [int(x) for x in test_results]
             eval_results[test_name].loc[len(eval_results[test_name])] = [filename] + test_results
             total_results = [sum(x) for x in zip(total_results, test_results)]
         eval_results['Total'].loc[len(eval_results['Total'])] = [filename] + total_results
     return eval_results
+
+def run_generator(mapping:dict = None):
+    done = 0
+    out_of = len(list(os.listdir(TESTS_DIR))) * len(list(os.listdir(PROJECTS_DIR)))
+    eval_results = create_dataframes()
+    for project in os.listdir(PROJECTS_DIR):
+        if not prepare_project(project):
+            print('Failed to prepare project: ' + project)
+            continue
+        total_results = [0, 0, 0, 0]
+        filename = project[:-4]
+        if mapping is not None and project in mapping:
+                filename = mapping[project]
+        for test in os.listdir(TESTS_DIR):
+            prepare_test(test)
+            comp = subprocess.run(["mvn", "compile"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, cwd=TEMPLATE_DIR)
+            result = subprocess.run(["mvn", "test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, cwd=TEMPLATE_DIR)
+            test_name = test[:-5]
+            output = result.stdout
+            test_results = re.search(r'Tests run: (\d+), Failures: (\d+), Errors: (\d+), Skipped: (\d+)', output.decode('utf-8'))
+            if test_results is None:
+                print('Failed to run test: ' + test_name)
+                continue
+            done += 1
+            test_results = test_results.groups()
+            test_results = [int(x) for x in test_results]
+            eval_results[test_name].loc[len(eval_results[test_name])] = [filename] + test_results
+            total_results = [sum(x) for x in zip(total_results, test_results)]
+            yield {'current': done, 'total': out_of, 'results': eval_results}
+        eval_results['Total'].loc[len(eval_results['Total'])] = [filename] + total_results
+        yield {'current': done, 'total': out_of, 'results': eval_results}
 
 
 

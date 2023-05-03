@@ -27,9 +27,9 @@ def main():
         for i in range(len(df)):
             map[str(df.iloc[i, 0])] = str(df.iloc[i, 1])
     if args.output is not None:
-        Juniter.save_results(asyncio.run(Juniter.run(progress=progress, mapping=map)), args.output)
+        Juniter.save_results(Juniter.run(progress=progress, mapping=map), args.output)
     else:
-         Juniter.save_results(asyncio.run(Juniter.run(progress=progress, mapping=map)))
+         Juniter.save_results(Juniter.run(progress=progress, mapping=map))
     Juniter.clear_files()
 
 if __name__ == "__main__":

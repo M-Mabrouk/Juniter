@@ -18,6 +18,7 @@ st.set_page_config(page_title='Juniter', page_icon=':robot_face:', layout='wide'
 
 def save_files(projects, tests, mapping=None):
     Juniter.clear_files()
+    st.session_state['map'] = None
     # Save the projects
     for project in projects:
         with open(os.path.join(Juniter.PROJECTS_DIR, project.name), 'wb') as f:
@@ -32,16 +33,6 @@ def save_files(projects, tests, mapping=None):
         df = pd.read_csv(mapping)
         for i in range(len(df)):
             st.session_state['map'][str(df.iloc[i, 0])] = str(df.iloc[i, 1])
-
-def clean():
-    Juniter.clear_files()
-    st.session_state['map'] = None
-
-def update_progress(info):
-    st.session_state['progress'] = info['current'] / info['total']
-    st.session_state['prg_bar'].progress(st.session_state['progress'])
-    st.session_state['prg_info'].text(f'step {info["current"]} out of {info["total"]}')
-
 
 def convert_zip(dfs:dict):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
@@ -58,32 +49,19 @@ def convert_zip(dfs:dict):
             if file_name.endswith('.csv'):
                 os.remove(os.path.join(Juniter.RESULTS_DIR, file_name))
     return open(os.path.join(Juniter.RESULTS_DIR, 'results.zip'), 'rb')
-    
-    
-    
 
-    
+if 'phase' not in st.session_state:
+    st.session_state['phase'] = 'upload'
 
-with st.columns([1,3,1])[1]:
+print(st.session_state['phase'])
+center = st.columns([1, 3, 1])[1]
+
+with center:
     st.write('# Juniter')
     st.write('---')
 
-if 'processing' not in st.session_state:
-    st.session_state['processing'] = True
-
-if 'progress' not in st.session_state:
-    st.session_state['progress'] = 0
-
-if 'results' not in st.session_state:
-    st.session_state['results'] = None
-
-if 'map' not in st.session_state:
-    st.session_state['map'] = None
-
-if st.session_state['processing']:
-    clean()
-    _, col2, _ = st.columns([1,3,1])
-    with col2:
+    if st.session_state.phase == 'upload':
+        # Upload the projects
         st.subheader('Upload your projects')
         project_files = st.file_uploader('projects', type=['zip', 'rar'], accept_multiple_files=True, label_visibility='hidden', key='projects')
         st.write('\n')
@@ -93,42 +71,48 @@ if st.session_state['processing']:
         st.subheader('Upload your mapping file (Optional)')
         mapping_file = st.file_uploader('mapping', type=['csv'], accept_multiple_files=False, label_visibility='hidden', key='mapping')
         st.write('---')
-    
-    col1, col2, col3 = st.columns(3)
-    with col2:
         if st.button('Evaluate', use_container_width=True, type='primary'):
-            if project_files == [] or test_files == []:
-                st.error('Please upload both your projects and tests')
-            else:
+            if project_files and test_files:
                 save_files(project_files, test_files, mapping_file)
-                st.session_state['processing'] = False
+                st.session_state.phase = 'inbetween'
                 st.experimental_rerun()
-else:
-    pre = st.empty()
-    _, col2, col3 = st.columns([1,3,1])
-    if st.session_state['progress'] < 1 or st.session_state['results'] is None:
-        with col2:
-            st.subheader('Progress')
-            if 'prg_bar' not in st.session_state:
-                st.session_state['prg_bar'] = st.progress(0)
-            st.session_state['prg_bar'].progress(st.session_state['progress'])
-        with col2.columns([4,1])[1]:
-            if 'prg_info' not in st.session_state:
-                st.session_state['prg_info'] = st.empty()
-        with col2:
-            st.write('---')
-        st.session_state['results'] =  asyncio.run(Juniter.run(progress=update_progress, mapping=st.session_state['map']))
+            else:
+                st.error('Please upload at least one project and one test')
+    if st.session_state.phase == 'inbetween':
+        st.write('---')
+        st.write('---')
+        st.write('---')
+        st.write('---')
+        st.write('---')
+        st.write('---')
+        st.session_state.phase = 'evaluate'
+    if st.session_state.phase == 'evaluate':
+        # Evaluate the projects
+        st.subheader('Evaluation in progress')
+        prg = st.empty()
+        with center.columns([1, 1, 1])[2]:
+                prg.progress(0)
+                step = st.empty()
+                step.text('Step 0 out of ?')
+        st.write('---')
+        for snapshot in Juniter.run_generator(mapping=st.session_state['map']):
+            prg.progress(snapshot['current'] / snapshot['total'])
+            with center.columns([1, 1, 1])[2]:
+                step.text(f'Step {snapshot["current"]} out of {snapshot["total"]}')
+            st.session_state['results'] = snapshot['results']
+        
+        st.session_state.phase = 'results'
         st.experimental_rerun()
-    else:
+    if st.session_state.phase == 'results':
         Juniter.clear_files()
-        with col2:
+        with center:
             st.success('Evaluation done')
             downloadable = convert_zip(st.session_state['results'])
             tabs = st.tabs(st.session_state['results'].keys())
             for key, value in st.session_state['results'].items():
                 with tabs[list(st.session_state['results'].keys()).index(key)]:
                     st.dataframe(value,use_container_width=True)
-        with col2:
+        with center:
             st.download_button('Download results', data=downloadable, file_name='results.zip', mime='application/zip')
+
         
-    
