@@ -83,4 +83,4 @@ cd path/to/Juniter
 streamlit run StreamLit/Home.py
 ```
 
-or simply visit the [streamlit web interface](juniter.streamlit.app)
+or simply visit the [streamlit web interface](https://juniter.streamlit.app/)
